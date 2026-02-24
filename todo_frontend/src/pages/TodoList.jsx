@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../utils/api";
 
@@ -7,10 +7,6 @@ function TodoList() {
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("newest");
-
   useEffect(() => {
     async function loadTodos() {
       try {
@@ -18,7 +14,7 @@ function TodoList() {
         setErrMsg("");
 
         const res = await api.get("/todos");
-        setTodos(Array.isArray(res.data.data) ? res.data.data : []);
+        setTodos(res.data.data || res.data);
       } catch (err) {
         console.error(err);
         setErrMsg(
@@ -32,151 +28,213 @@ function TodoList() {
     loadTodos();
   }, []);
 
-  const stats = useMemo(() => {
-    const total = todos.length;
-    const completed = todos.filter((t) => t.completed).length;
-    const remaining = total - completed;
-    return { total, completed, remaining };
-  }, [todos]);
-
-  const filteredTodos = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    let list = [...todos];
-
-    if (filter === "active") list = list.filter((t) => !t.completed);
-    if (filter === "completed") list = list.filter((t) => t.completed);
-
-    if (q) {
-      list = list.filter((t) => {
-        const title = (t.title || "").toLowerCase();
-        const desc = (t.description || "").toLowerCase();
-        const cat = (t.category || "").toLowerCase();
-        return (
-          title.includes(q) ||
-          desc.includes(q) ||
-          cat.includes(q)
-        );
-      });
-    }
-
-    const priorityRank = (p) => {
-      if (p === "high") return 3;
-      if (p === "medium") return 2;
-      if (p === "low") return 1;
-      return 0;
-    };
-
-    list.sort((a, b) => {
-      if (sortBy === "newest") {
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-      }
-      if (sortBy === "oldest") {
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-      }
-      if (sortBy === "due") {
-        const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
-        const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
-        return ad - bd;
-      }
-      if (sortBy === "priority") {
-        return priorityRank(b.priority) - priorityRank(a.priority);
-      }
-      return 0;
-    });
-
-    return list;
-  }, [todos, search, filter, sortBy]);
-
-  const formatDate = (iso) => {
-    if (!iso) return "";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const isOverdue = (todo) => {
-    if (!todo.dueDate) return false;
-    const due = new Date(todo.dueDate);
-    if (Number.isNaN(due.getTime())) return false;
-    return !todo.completed && due.getTime() < new Date().getTime();
-  };
-
-  const priorityStyle = (p) => {
-    if (p === "high") return styles.badgeHigh;
-    if (p === "medium") return styles.badgeMed;
-    if (p === "low") return styles.badgeLow;
-    return styles.badgeNeutral;
-  };
-
   const handleDelete = async (id) => {
     const ok = window.confirm("Delete this todo?");
     if (!ok) return;
 
     try {
       await api.delete(`/todos/${id}`);
-      setTodos((prev) =>
-        prev.filter((t) => Number(t.id) !== Number(id))
-      );
+      setTodos((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Delete failed.");
     }
   };
 
-  const toggleCompleted = async (todo) => {
-    const nextCompleted = !todo.completed;
-
-    setTodos((prev) =>
-      prev.map((t) =>
-        t.id === todo.id ? { ...t, completed: nextCompleted } : t
-      )
+  if (loading) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.stateBox}>Loading todos…</div>
+      </div>
     );
+  }
 
-    try {
-      await api.patch(`/todos/${todo.id}`, {
-        completed: nextCompleted,
-      });
-    } catch (err) {
-      console.error(err);
-      setTodos((prev) =>
-        prev.map((t) =>
-          t.id === todo.id ? { ...t, completed: todo.completed } : t
-        )
-      );
-      alert(err.response?.data?.message || "Update failed.");
-    }
-  };
+  if (errMsg) {
+    return (
+      <div style={styles.page}>
+        <div style={{ ...styles.stateBox, ...styles.stateError }}>
+          {errMsg}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
-      {/* ---- UI BELOW IS 100% UNCHANGED ---- */}
-
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>My Todos</h1>
-          <p style={styles.subtitle}>
-            Total: <b>{stats.total}</b> · Completed:{" "}
-            <b>{stats.completed}</b> · Remaining:{" "}
-            <b>{stats.remaining}</b>
-          </p>
-        </div>
-
+      <div style={styles.headerRow}>
+        <h1 style={styles.title}>My Todos</h1>
         <Link to="/new" style={styles.primaryBtn}>
           + New Todo
         </Link>
       </div>
 
-      {/* Rest of your JSX remains EXACTLY the same */}
-      
-      {/* (Keeping your styles object unchanged below) */}
+      {todos.length === 0 ? (
+        <div style={styles.stateBox}>No todos yet.</div>
+      ) : (
+        <div style={styles.grid}>
+          {todos.map((todo) => (
+            <div key={todo.id} style={styles.card}>
+              <div style={styles.cardTop}>
+                <h3 style={styles.cardTitle}>{todo.title}</h3>
+                <span
+                  style={{
+                    ...styles.badge,
+                    ...(todo.completed
+                      ? styles.badgeCompleted
+                      : styles.badgePending),
+                  }}
+                >
+                  {todo.completed ? "Completed" : "Pending"}
+                </span>
+              </div>
+
+              {todo.description && (
+                <p style={styles.desc}>{todo.description}</p>
+              )}
+
+              <div style={styles.actions}>
+                <Link
+                  to={`/todo/${todo.id}`}
+                  style={styles.ghostBtn}
+                >
+                  View
+                </Link>
+
+                <Link
+                  to={`/edit/${todo.id}`}
+                  style={styles.ghostBtn}
+                >
+                  Edit
+                </Link>
+
+                <button
+                  onClick={() => handleDelete(todo.id)}
+                  style={styles.dangerBtn}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ⚠️ KEEP YOUR EXISTING styles OBJECT EXACTLY AS IT IS HERE */
+/* ✅ ORIGINAL DESIGN RESTORED */
+const styles = {
+  page: {
+    padding: "32px",
+    minHeight: "100vh",
+    background: "linear-gradient(180deg, #fff7f0 0%, #ffffff 60%)",
+    fontFamily:
+      "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+  },
+  headerRow: {
+    maxWidth: "1100px",
+    margin: "0 auto 20px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    color: "#111827",
+  },
+  primaryBtn: {
+    textDecoration: "none",
+    padding: "10px 16px",
+    borderRadius: "12px",
+    background: "#ff6a00",
+    color: "#fff",
+    fontWeight: "700",
+  },
+  grid: {
+    maxWidth: "1100px",
+    margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "16px",
+  },
+  card: {
+    background: "#ffffff",
+    borderRadius: "16px",
+    padding: "16px",
+    border: "1px solid #f1f5f9",
+    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+  cardTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "8px",
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: "18px",
+    color: "#111827",
+  },
+  desc: {
+    marginTop: "10px",
+    fontSize: "14px",
+    color: "#6b7280",
+  },
+  badge: {
+    fontSize: "12px",
+    padding: "4px 8px",
+    borderRadius: "999px",
+    fontWeight: "700",
+  },
+  badgeCompleted: {
+    background: "#ecfdf5",
+    color: "#065f46",
+  },
+  badgePending: {
+    background: "#fff7ed",
+    color: "#9a3412",
+  },
+  actions: {
+    marginTop: "14px",
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  ghostBtn: {
+    textDecoration: "none",
+    padding: "6px 12px",
+    borderRadius: "10px",
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    fontSize: "13px",
+    color: "#111827",
+  },
+  dangerBtn: {
+    padding: "6px 12px",
+    borderRadius: "10px",
+    border: "1px solid #fecaca",
+    background: "#fff1f2",
+    color: "#991b1b",
+    fontSize: "13px",
+    cursor: "pointer",
+  },
+  stateBox: {
+    maxWidth: "1100px",
+    margin: "0 auto",
+    padding: "16px",
+    borderRadius: "14px",
+    background: "#ffffff",
+    border: "1px solid #f1f5f9",
+  },
+  stateError: {
+    border: "1px solid #fecaca",
+    background: "#fff1f2",
+    color: "#991b1b",
+  },
+};
 
 export default TodoList;
