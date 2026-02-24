@@ -26,46 +26,59 @@ function Login() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Welcome Back</h1>
-        <p style={styles.subtitle}>Login to manage your todos</p>
-
-        {errMsg && (
-          <div style={{ ...styles.stateBox, ...styles.stateError }}>
-            {errMsg}
+      <div style={styles.shell}>
+        {/* ✅ LEFT: Images Section (2 rows x 2 images) */}
+        <div style={styles.imagesPane}>
+          <div style={styles.imagesGrid}>
+            <img src="src/images/img1.jpg" alt="img1" style={styles.gridImg} />
+            <img src="src/images/img2.jpg" alt="img2" style={styles.gridImg} />
+            <img src="src/images/img3.jpg" alt="img3" style={styles.gridImg} />
+            <img src="src/images/img4.jpg" alt="img4" style={styles.gridImg} />
           </div>
-        )}
+        </div>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="email"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            required
-          />
+        {/* ✅ RIGHT: Login Section */}
+        <div style={styles.loginPane}>
+          <h1 style={styles.title}>Welcome Back</h1>
+          <p style={styles.subtitle}>Login to manage your todos</p>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            required
-          />
+          {errMsg && (
+            <div style={{ ...styles.stateBox, ...styles.stateError }}>
+              {errMsg}
+            </div>
+          )}
 
-          <button type="submit" style={styles.primaryBtn}>
-            Login
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+              required
+            />
 
-        <p style={styles.footerText}>
-          Don’t have an account?{" "}
-          <Link to="/signup" style={styles.link}>
-            Sign up
-          </Link>
-        </p>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={styles.input}
+              required
+            />
+
+            <button type="submit" style={styles.primaryBtn}>
+              Login
+            </button>
+          </form>
+
+          <p style={styles.footerText}>
+            Don’t have an account?{" "}
+            <Link to="/signup" style={styles.link}>
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -79,18 +92,56 @@ const styles = {
     justifyContent: "center",
     padding: "32px",
     background: "linear-gradient(180deg, #fff7f0 0%, #ffffff 60%)",
-    fontFamily:
-      "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
   },
-  card: {
+
+  /* ✅ NEW: outer shell that holds both panes */
+  shell: {
     width: "100%",
-    maxWidth: "420px",
-    background: "#fff",
+    maxWidth: "860px",
+    display: "flex",
+    alignItems: "stretch", // ✅ same height
     borderRadius: "16px",
+    overflow: "hidden",
     border: "1px solid #f1f5f9",
-    padding: "28px",
     boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+    background: "#fff",
   },
+
+  /* ✅ LEFT pane */
+  imagesPane: {
+    flex: "1 1 50%",
+    padding: "22px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagesGrid: {
+    width: "100%",
+    height: "100%",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gridTemplateRows: "1fr 1fr",
+    gap: "14px",
+  },
+  gridImg: {
+    width: "70%",
+    height: "100%",
+    objectFit: "contain",
+    background: "rgba(255,255,255,0.06)",
+    borderRadius: "52px",
+    padding: "12px",
+  },
+
+  /* ✅ RIGHT pane */
+  loginPane: {
+    flex: "1 1 50%",
+    padding: "28px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  },
+
   title: {
     margin: 0,
     fontSize: "28px",

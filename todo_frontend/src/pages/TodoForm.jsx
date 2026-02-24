@@ -93,8 +93,10 @@ function TodoForm() {
       setErrMsg("");
 
       if (isEdit) {
+      
         await api.patch(`/todos/${id}`, payload);
       } else {
+        console.log()
         await api.post("/todos", payload);
       }
 

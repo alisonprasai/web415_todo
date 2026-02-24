@@ -12,7 +12,9 @@ const deleteToDo = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
+    console.log(todoId);
+    console.log(userId);
 
     if (!userId) {
       return res.status(401).json({
@@ -23,7 +25,7 @@ const deleteToDo = async (req: AuthRequest, res: Response) => {
     // 🔐 Only delete if the todo belongs to this user
     const deleteResult = await todoModel.deleteOne({
       id: todoId,
-      userId: userId,
+      // userId: userId,
     });
 
     if (deleteResult.deletedCount === 0) {
