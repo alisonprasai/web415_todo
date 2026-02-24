@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { API_URL } from "../config";
+import api from "../utils/api";
 
 function TodoDetail() {
-  const { id } = useParams(); // numeric id
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [todo, setTodo] = useState(null);
@@ -11,38 +11,26 @@ function TodoDetail() {
   const [errMsg, setErrMsg] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // ✅ LOAD TODO
   useEffect(() => {
-    const controller = new AbortController();
-
     async function loadTodo() {
       try {
         setLoading(true);
         setErrMsg("");
 
-        const res = await fetch(`${API_URL}/todos/${id}`, {
-          signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
-        }
-
-        const json = await res.json();
-        setTodo(json.data || json);
+        const res = await api.get(`/todos/${id}`);
+        setTodo(res.data.data || res.data);
       } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error(err);
-          setErrMsg(err.message || "Failed to load todo.");
-        }
+        console.error(err);
+        setErrMsg(
+          err.response?.data?.message || "Failed to load todo."
+        );
       } finally {
         setLoading(false);
       }
     }
 
     loadTodo();
-    return () => controller.abort();
   }, [id]);
 
   const formatDateTime = (iso) => {
@@ -83,6 +71,7 @@ function TodoDetail() {
     return styles.badgeNeutral;
   };
 
+  // ✅ TOGGLE COMPLETE
   const toggleCompleted = async () => {
     if (!todo) return;
 
@@ -93,60 +82,56 @@ function TodoDetail() {
     setTodo((prev) => ({ ...prev, completed: nextCompleted }));
 
     try {
-      const res = await fetch(`${API_URL}/todos/${todo.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: nextCompleted }),
+      await api.patch(`/todos/${todo.id}`, {
+        completed: nextCompleted,
       });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Update failed ${res.status}: ${text.slice(0, 200)}`);
-      }
-
-      // If your backend returns updated object, you can sync:
-      // const json = await res.json();
-      // if (json?.data) setTodo(json.data);
     } catch (err) {
       console.error(err);
+
       // rollback
       setTodo((prev) => ({ ...prev, completed: !nextCompleted }));
-      alert(err.message || "Could not update todo.");
+
+      alert(
+        err.response?.data?.message ||
+          "Could not update todo."
+      );
     } finally {
       setSaving(false);
     }
   };
 
+  // ✅ DELETE
   const handleDelete = async () => {
     if (!todo) return;
     const ok = window.confirm("Delete this todo?");
     if (!ok) return;
 
     try {
-      const res = await fetch(`${API_URL}/todos/${todo.id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Delete failed ${res.status}: ${text.slice(0, 200)}`);
-      }
-
+      await api.delete(`/todos/${todo.id}`);
       navigate("/");
     } catch (err) {
       console.error(err);
-      alert(err.message || "Delete failed.");
+      alert(
+        err.response?.data?.message ||
+          "Delete failed."
+      );
     }
   };
 
   if (loading) {
-    return <div style={styles.page}><div style={styles.stateBox}>Loading…</div></div>;
+    return (
+      <div style={styles.page}>
+        <div style={styles.stateBox}>Loading…</div>
+      </div>
+    );
   }
 
   if (errMsg) {
     return (
       <div style={styles.page}>
-        <div style={{ ...styles.stateBox, ...styles.stateError }}>{errMsg}</div>
+        <div style={{ ...styles.stateBox, ...styles.stateError }}>
+          {errMsg}
+        </div>
         <button onClick={() => navigate("/")} style={styles.secondaryBtn}>
           Back to list
         </button>
@@ -193,14 +178,18 @@ function TodoDetail() {
             <span style={{ ...styles.badge, ...priorityStyle(todo.priority) }}>
               {todo.priority || "none"}
             </span>
-            {todo.category ? (
+
+            {todo.category && (
               <span style={{ ...styles.badge, ...styles.badgeCategory }}>
                 {todo.category}
               </span>
-            ) : null}
-            {overdue ? (
-              <span style={{ ...styles.badge, ...styles.badgeOverdue }}>overdue</span>
-            ) : null}
+            )}
+
+            {overdue && (
+              <span style={{ ...styles.badge, ...styles.badgeOverdue }}>
+                overdue
+              </span>
+            )}
           </div>
         </div>
 
@@ -228,25 +217,40 @@ function TodoDetail() {
                 cursor: saving ? "not-allowed" : "pointer",
               }}
             >
-              {saving ? "Updating…" : todo.completed ? "Mark as not completed" : "Mark as completed"}
+              {saving
+                ? "Updating…"
+                : todo.completed
+                ? "Mark as not completed"
+                : "Mark as completed"}
             </button>
           </div>
 
           <div style={styles.metaCard}>
             <div style={styles.metaLabel}>Due date</div>
-            <div style={styles.metaValue}>{formatDate(todo.dueDate)}</div>
+            <div style={styles.metaValue}>
+              {formatDate(todo.dueDate)}
+            </div>
             <div style={styles.metaHint}>
-              {todo.dueDate ? (overdue ? "This task is overdue." : "On track.") : "No deadline set."}
+              {todo.dueDate
+                ? overdue
+                  ? "This task is overdue."
+                  : "On track."
+                : "No deadline set."}
             </div>
           </div>
 
           <div style={styles.metaCard}>
             <div style={styles.metaLabel}>Created</div>
-            <div style={styles.metaValue}>{formatDateTime(todo.createdAt)}</div>
-            <div style={styles.metaLabel} style={{ ...styles.metaLabel, marginTop: 10 }}>
+            <div style={styles.metaValue}>
+              {formatDateTime(todo.createdAt)}
+            </div>
+
+            <div style={{ ...styles.metaLabel, marginTop: 10 }}>
               Updated
             </div>
-            <div style={styles.metaValue}>{formatDateTime(todo.updatedAt)}</div>
+            <div style={styles.metaValue}>
+              {formatDateTime(todo.updatedAt)}
+            </div>
           </div>
         </div>
       </div>
@@ -254,6 +258,7 @@ function TodoDetail() {
   );
 }
 
+/* ✅ STYLES (unchanged UI) */
 const styles = {
   page: {
     padding: "32px",
@@ -261,7 +266,6 @@ const styles = {
     background: "linear-gradient(180deg, #fff7f0 0%, #ffffff 60%)",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
   },
-
   headerRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -274,7 +278,6 @@ const styles = {
     gap: "10px",
     flexWrap: "wrap",
   },
-
   card: {
     maxWidth: "900px",
     background: "#fff",
@@ -283,7 +286,6 @@ const styles = {
     padding: "16px",
     boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
   },
-
   topRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -303,7 +305,6 @@ const styles = {
     letterSpacing: "-0.5px",
     color: "#111827",
   },
-
   badges: {
     display: "flex",
     flexWrap: "wrap",
@@ -355,7 +356,6 @@ const styles = {
     color: "#991b1b",
     fontWeight: 900,
   },
-
   section: {
     marginTop: "16px",
     paddingTop: "14px",
@@ -378,7 +378,6 @@ const styles = {
     color: "#9ca3af",
     fontStyle: "italic",
   },
-
   sectionGrid: {
     marginTop: "16px",
     display: "grid",
@@ -407,7 +406,6 @@ const styles = {
     color: "#6b7280",
     fontSize: "12px",
   },
-
   primaryBtn: {
     marginTop: "10px",
     width: "100%",
@@ -433,7 +431,6 @@ const styles = {
     border: "1px solid #e5e7eb",
     background: "#fff",
     color: "#111827",
-    cursor: "pointer",
   },
   dangerBtn: {
     padding: "10px 14px",
@@ -444,7 +441,6 @@ const styles = {
     cursor: "pointer",
     fontWeight: 800,
   },
-
   stateBox: {
     maxWidth: "900px",
     padding: "16px",

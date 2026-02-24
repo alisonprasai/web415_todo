@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { API_URL } from "../config";
+import api from "../utils/api";
 
 function TodoForm() {
-  const { id } = useParams(); // numeric id
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const isEdit = useMemo(() => Boolean(id), [id]);
@@ -15,15 +15,14 @@ function TodoForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
-  const [dueDate, setDueDate] = useState(""); // YYYY-MM-DD
+  const [dueDate, setDueDate] = useState("");
   const [category, setCategory] = useState("general");
-  const [completed, setCompleted] = useState(false); // only meaningful on edit
+  const [completed, setCompleted] = useState(false);
 
   const categoryPresets = ["general", "study", "work", "personal", "health"];
 
+  // ✅ LOAD TODO (Edit Mode)
   useEffect(() => {
-    const controller = new AbortController();
-
     async function loadTodo() {
       if (!id) return;
 
@@ -31,18 +30,8 @@ function TodoForm() {
         setLoading(true);
         setErrMsg("");
 
-        const res = await fetch(`${API_URL}/todos/${id}`, {
-          signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
-        }
-
-        const json = await res.json();
-        const todo = json.data || json;
+        const res = await api.get(`/todos/${id}`);
+        const todo = res.data.data || res.data;
 
         setTitle(todo.title || "");
         setDescription(todo.description || "");
@@ -50,7 +39,6 @@ function TodoForm() {
         setCategory(todo.category || "general");
         setCompleted(Boolean(todo.completed));
 
-        // ISO -> YYYY-MM-DD for date input
         if (todo.dueDate) {
           const d = new Date(todo.dueDate);
           const yyyy = d.getFullYear();
@@ -61,19 +49,19 @@ function TodoForm() {
           setDueDate("");
         }
       } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error(err);
-          setErrMsg(err.message || "Failed to load todo.");
-        }
+        console.error(err);
+        setErrMsg(
+          err.response?.data?.message || "Failed to load todo."
+        );
       } finally {
         setLoading(false);
       }
     }
 
     loadTodo();
-    return () => controller.abort();
   }, [id]);
 
+  // ✅ Title Validation
   const titleError = useMemo(() => {
     const t = title.trim();
     if (!t) return "Title is required.";
@@ -82,6 +70,7 @@ function TodoForm() {
     return "";
   }, [title]);
 
+  // ✅ SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -90,38 +79,31 @@ function TodoForm() {
       return;
     }
 
-    const method = isEdit ? "PATCH" : "POST";
-    const url = isEdit ? `${API_URL}/todos/${id}` : `${API_URL}/todos`;
-
-    // Build payload (match backend fields)
     const payload = {
       title: title.trim(),
       description: description.trim(),
       priority,
       category: category.trim() || "general",
       dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-      ...(isEdit ? { completed } : {}), // only send completed on edit
+      ...(isEdit ? { completed } : {}),
     };
 
     try {
       setSaving(true);
       setErrMsg("");
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Save failed ${res.status}: ${text.slice(0, 200)}`);
+      if (isEdit) {
+        await api.patch(`/todos/${id}`, payload);
+      } else {
+        await api.post("/todos", payload);
       }
 
       navigate("/");
     } catch (err) {
       console.error(err);
-      setErrMsg(err.message || "Could not save todo.");
+      setErrMsg(
+        err.response?.data?.message || "Could not save todo."
+      );
     } finally {
       setSaving(false);
     }
@@ -141,11 +123,7 @@ function TodoForm() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleCancel}
-          style={styles.secondaryBtn}
-        >
+        <button type="button" onClick={handleCancel} style={styles.secondaryBtn}>
           Cancel
         </button>
       </div>
@@ -161,7 +139,6 @@ function TodoForm() {
           ) : null}
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            {/* Title */}
             <div style={styles.field}>
               <label style={styles.label}>Title *</label>
               <input
@@ -182,7 +159,6 @@ function TodoForm() {
               </div>
             </div>
 
-            {/* Description */}
             <div style={styles.field}>
               <label style={styles.label}>Description</label>
               <textarea
@@ -195,7 +171,6 @@ function TodoForm() {
             </div>
 
             <div style={styles.grid2}>
-              {/* Priority */}
               <div style={styles.field}>
                 <label style={styles.label}>Priority</label>
                 <select
@@ -209,7 +184,6 @@ function TodoForm() {
                 </select>
               </div>
 
-              {/* Due Date */}
               <div style={styles.field}>
                 <label style={styles.label}>Due Date</label>
                 <input
@@ -222,7 +196,6 @@ function TodoForm() {
               </div>
             </div>
 
-            {/* Category */}
             <div style={styles.field}>
               <label style={styles.label}>Category</label>
               <input
@@ -249,8 +222,7 @@ function TodoForm() {
               </div>
             </div>
 
-            {/* Completed (edit only) */}
-            {isEdit ? (
+            {isEdit && (
               <div style={styles.field}>
                 <label style={styles.checkboxRow}>
                   <input
@@ -264,7 +236,7 @@ function TodoForm() {
                   You can also toggle this from the list view checkbox.
                 </span>
               </div>
-            ) : null}
+            )}
 
             <div style={styles.actions}>
               <button
@@ -294,6 +266,7 @@ function TodoForm() {
   );
 }
 
+/* ✅ Your styles object remains EXACTLY the same */
 const styles = {
   page: {
     padding: "32px",
@@ -319,7 +292,6 @@ const styles = {
     color: "#6b7280",
     fontSize: "14px",
   },
-
   card: {
     maxWidth: "760px",
     background: "#fff",
@@ -344,7 +316,6 @@ const styles = {
     color: "#991b1b",
     marginBottom: "14px",
   },
-
   form: {
     display: "flex",
     flexDirection: "column",
@@ -385,13 +356,11 @@ const styles = {
     color: "#6b7280",
     whiteSpace: "nowrap",
   },
-
   grid2: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: "12px",
   },
-
   pillsRow: {
     display: "flex",
     flexWrap: "wrap",
@@ -412,7 +381,6 @@ const styles = {
     color: "#9a3412",
     fontWeight: 800,
   },
-
   checkboxRow: {
     display: "flex",
     alignItems: "center",
@@ -422,7 +390,6 @@ const styles = {
     color: "#111827",
     fontWeight: 700,
   },
-
   actions: {
     display: "flex",
     gap: "10px",
