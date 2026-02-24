@@ -14,7 +14,8 @@ function Signup() {
     setErrMsg("");
 
     try {
-      await api.post("/auth/register", { email, password });
+      console.log("signup frontent");
+      await api.post("/auth/signup", { email, password });
       navigate("/login");
     } catch (error) {
       setErrMsg(error.response?.data?.message || "Signup failed");
@@ -76,8 +77,7 @@ const styles = {
     justifyContent: "center",
     padding: "32px",
     background: "linear-gradient(180deg, #fff7f0 0%, #ffffff 60%)",
-    fontFamily:
-      "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
   },
   card: {
     width: "100%",

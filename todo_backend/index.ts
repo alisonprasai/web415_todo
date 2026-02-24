@@ -26,8 +26,7 @@ server.listen(8000, async () => {
   console.log("Server started successfully!");
   console.log(process.env.mongo_url);
 
-  // TODO: uncomment the line below when mongodb works
-  // await mongoose.connect(String(process.env.mongo_url));
+  await mongoose.connect(String(process.env.mongo_url));
 
   console.log("Database connected successfully!");
 });
