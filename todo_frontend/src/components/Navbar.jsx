@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import todoIcon from "../images/todo.png";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -22,7 +23,8 @@ function Navbar() {
         {/* LEFT SIDE */}
         <div style={styles.left}>
           <Link to="/" style={styles.logo}>
-            TodoApp
+            <img src={todoIcon} alt="logo" style={styles.logoIcon} />
+            Todify
           </Link>
 
           {isAuthenticated && (
@@ -49,11 +51,9 @@ function Navbar() {
               </Link>
             </>
           ) : (
-            <>
-              <button onClick={handleLogout} style={styles.primaryBtn}>
-                Logout
-              </button>
-            </>
+            <button onClick={handleLogout} style={styles.primaryBtn}>
+              Logout
+            </button>
           )}
         </div>
       </div>
@@ -90,10 +90,18 @@ const styles = {
     gap: "14px",
   },
   logo: {
+    display: "flex",              // ✅ Align icon + text
+    alignItems: "center",
+    gap: "8px",                   // spacing between icon & text
     textDecoration: "none",
     fontSize: "18px",
     fontWeight: "700",
     color: "#111827",
+  },
+  logoIcon: {
+    width: "22px",                // adjust size if needed
+    height: "22px",
+    objectFit: "contain",
   },
   link: {
     textDecoration: "none",

@@ -26,8 +26,10 @@ function Login() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.shell}>
-        {/* ✅ LEFT: Images Section (2 rows x 2 images) */}
+      {/* Wrapper positioned 40px below navbar */}
+      <div style={styles.wrapper}>
+        
+        {/* ✅ LEFT: Images Section (no background / no shadow) */}
         <div style={styles.imagesPane}>
           <div style={styles.imagesGrid}>
             <img src="src/images/img1.jpg" alt="img1" style={styles.gridImg} />
@@ -37,7 +39,7 @@ function Login() {
           </div>
         </div>
 
-        {/* ✅ RIGHT: Login Section */}
+        {/* ✅ RIGHT: Login Section (keeps white design) */}
         <div style={styles.loginPane}>
           <h1 style={styles.title}>Welcome Back</h1>
           <p style={styles.subtitle}>Login to manage your todos</p>
@@ -87,28 +89,22 @@ function Login() {
 const styles = {
   page: {
     minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "32px",
+    padding: "120px 32px 32px", // ✅ 40px below navbar
     background: "linear-gradient(180deg, #fff7f0 0%, #ffffff 60%)",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
   },
 
-  /* ✅ NEW: outer shell that holds both panes */
-  shell: {
+  /* ✅ New wrapper instead of white shell */
+  wrapper: {
     width: "100%",
     maxWidth: "860px",
+    margin: "0 auto",
     display: "flex",
-    alignItems: "stretch", // ✅ same height
-    borderRadius: "16px",
-    overflow: "hidden",
-    border: "1px solid #f1f5f9",
-    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
-    background: "#fff",
+    alignItems: "stretch",
+    gap: "40px", // spacing between image and login sections
   },
 
-  /* ✅ LEFT pane */
+  /* ✅ LEFT pane — completely transparent */
   imagesPane: {
     flex: "1 1 50%",
     padding: "22px",
@@ -116,6 +112,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
   },
+
   imagesGrid: {
     width: "100%",
     height: "100%",
@@ -124,22 +121,26 @@ const styles = {
     gridTemplateRows: "1fr 1fr",
     gap: "14px",
   },
+
   gridImg: {
     width: "70%",
     height: "100%",
     objectFit: "contain",
-    background: "rgba(255,255,255,0.06)",
     borderRadius: "52px",
     padding: "12px",
   },
 
-  /* ✅ RIGHT pane */
+  /* ✅ RIGHT pane — keeps original white card design */
   loginPane: {
     flex: "1 1 50%",
     padding: "28px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #f1f5f9",
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
   },
 
   title: {
@@ -147,22 +148,26 @@ const styles = {
     fontSize: "28px",
     color: "#1f2937",
   },
+
   subtitle: {
     margin: "6px 0 20px",
     fontSize: "14px",
     color: "#6b7280",
   },
+
   form: {
     display: "flex",
     flexDirection: "column",
     gap: "14px",
   },
+
   input: {
     padding: "10px 12px",
     borderRadius: "12px",
     border: "1px solid #e5e7eb",
     outline: "none",
   },
+
   primaryBtn: {
     marginTop: "6px",
     padding: "10px",
@@ -174,21 +179,25 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 8px 20px rgba(255,106,0,0.25)",
   },
+
   stateBox: {
     padding: "12px",
     borderRadius: "12px",
     marginBottom: "16px",
   },
+
   stateError: {
     border: "1px solid #fecaca",
     background: "#fff1f2",
     color: "#991b1b",
   },
+
   footerText: {
     marginTop: "18px",
     fontSize: "14px",
     color: "#6b7280",
   },
+
   link: {
     color: "#ff6a00",
     fontWeight: 600,
